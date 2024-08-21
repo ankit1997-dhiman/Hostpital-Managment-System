@@ -10,10 +10,10 @@ connectDB()
 .then(()=>{
    app.on('error',(error)=>{
       console.log(error,"here is error");
-      
+   
    })
-   app.listen(process.env.PORT | 8000 ,()=>{
-      console.log("connectDB successfully");
+   app.listen(process.env.PORT  ,()=>{
+      console.log("connectDB successfully" , process.env.PORT);
    } )
    
    
