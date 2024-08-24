@@ -58,24 +58,20 @@ const registerUser = asyncHandler( async (req, res)=>{
 
     const user= await User.create({userName: userName.toLowerCase(),avatar: avatar.url,  email, password ,fullName})
 
-   const createdUser = await User.findById(user._id).select("-password -refreshToken")
-   
-   
+    const createdUser = await User.findById(user._id).select("-password -refreshToken")
 
-if (!createdUser) {
-    throw new ApiError(500,"Something went wrong while creating a user");
-    
-}
+    if (!createdUser) {
+        throw new ApiError(500,"Something went wrong while creating a user");
+        
+    }
 
    return  res.status(201).json(
         new ApiResponse(200, createdUser, "User Created Suceessfully !!")
    )
 })
 
-
-
 const loginUser = asyncHandler(async (req, res) =>{
-    
+
     // req body -> data
     // username or email
     //find the user
@@ -109,9 +105,8 @@ const loginUser = asyncHandler(async (req, res) =>{
     throw new ApiError(401, "Invalid user credentials")
     }
 
-   const {userAccessToken, userRefereshToken} = await generateAccessTokenAndRefreshToken(user._id)
+    const {userAccessToken, userRefereshToken} = await generateAccessTokenAndRefreshToken(user._id)
    
-
     const loggedInUser = await User.findById(user._id).select("-password -refereshToken")
 
     const options = {
@@ -132,7 +127,6 @@ const loginUser = asyncHandler(async (req, res) =>{
     )
 
 })
-
 
 const logout = asyncHandler(async (req,res)=>{
     User.findByIdAndUpdate(req.user._id,{
@@ -155,7 +149,6 @@ const refereshToken =asyncHandler(async(req,res)=>{
 
    const incomingRefreshToken= req.cookies?.refreshToken || req.body.refreshToken
    
-
    if (!incomingRefreshToken) {
     throw new ApiError(401, "Unauthrized request");
    }
@@ -187,4 +180,67 @@ const refereshToken =asyncHandler(async(req,res)=>{
    }
 })
 
-export {registerUser,loginUser,logout,refereshToken}
+const updatePassword = asyncHandler(async(req ,res)=>{
+   
+    const {oldpassword,newPassword} = req.body
+    console.log(oldpassword,newPassword ,req.user)
+
+    if(oldpassword && newPassword === ""){
+        throw new ApiError(404, "Old Password and New Passowrd is required");
+    } 
+
+    const user = await User.findById(req.user.id)
+    const validPassword = await user.isPasswordCorrect(oldpassword)
+    console.log(validPassword)
+
+     if (!validPassword) {
+        throw new ApiError(404, "Not Valid Password");
+     }
+     console.log(newPassword)
+     user.password = newPassword
+       
+     console.log(user.password)
+
+     await user.save({validateBeforeSave:false})
+     return res.status(200).json(new ApiResponse(200, {}, "Password Changed Successfully"))
+})
+
+const currentUser = asyncHandler(async(req,res)=>{   
+  
+    res.status(200).json(new ApiResponse(200,req.user,"User fetched successfully"))
+
+})
+
+
+const updateAvatar = asyncHandler(async(req,res)=>{
+      const avatarPath = req.file?.path
+      if (!avatarPath) {
+        throw new ApiError(404 ,"Image Not Found")
+      }
+     
+      const avatar = await uplodOnCloudinary(avatarPath) 
+      
+      if (!avatar.url) {
+        throw new ApiError(400 ,"Error while uploading")
+      }
+    const user = await User.findByIdAndUpdate(req.user._id ,{
+    $set: {avatar:avatar.url}
+    },{new:true}).select('-password')
+
+    return res.status(200).json(new ApiResponse(200 , user, "updated sucessfully"))
+})
+
+
+const userUpdate = asyncHandler(async(req,res)=>{
+    const {fullName, userName} = req.body
+    console.log(fullName,userName)
+
+    const user = await User.findByIdAndUpdate(req.user._id,{
+        $set: {fullName,userName : userName}
+    },{new:true}).select('-password')
+
+    res.status(200).json(new ApiResponse(200, user, "Updated Successfully"))
+
+})
+
+export {registerUser,loginUser,logout,refereshToken,updatePassword,currentUser,updateAvatar,userUpdate}

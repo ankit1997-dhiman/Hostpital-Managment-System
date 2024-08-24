@@ -10,7 +10,7 @@ app.use(cors({
 }))
 
 // this is for json limit 
-app.use(express.json({limit:"18kb"}))
+app.use(express.json({limit:"16kb"}))
 
 // this is use form urlencode like %20
 app.use(express(urlencoded({
