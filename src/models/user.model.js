@@ -2,7 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt"
 import jwt from 'jsonwebtoken'
 
-const UserSchema= new Schema({
+const userSchema= new Schema({
     userName:{
         type:String,
         required:true,
@@ -46,17 +46,27 @@ const UserSchema= new Schema({
         type:String,
     }
 },{timestamps:true})
- 
-UserSchema.pre("save", async function (next){
-    if(!this.isModified("password")) return next()
-    this.password=bcrypt.hash(this.password,10)
+
+userSchema.pre("save", async function (next) {
+    if(!this.isModified("password")) return next();
+
+    this.password = await bcrypt.hash(this.password, 10)
     next()
 })
- UserSchema.methods.isPasswordCorrect = async function (password){
-     return await bcrypt.compare(password, this.password)
+ 
+// UserSchema.pre("save", async function (next){
+//     if(!this.isModified("password")) return next();
+//     this.password = bcrypt.hash(this.password , 10)
+//    
+//     next()
+// })
+ userSchema.methods.isPasswordCorrect = async function (password){    
+    
+    const comparepassword= await bcrypt.compare(password, this.password)
+    return comparepassword
  }
 
- UserSchema.methods.accessToken =  function (){
+ userSchema.methods.accessToken =  function (){
       return jwt.sign(
            {
             _id:this._id,
@@ -70,7 +80,7 @@ UserSchema.pre("save", async function (next){
         )
         
  }
- UserSchema.methods.refreshToken = function (){
+ userSchema.methods.refreshToken = function (){
    return jwt.sign(
        {
         _id:this._id,
@@ -82,4 +92,4 @@ UserSchema.pre("save", async function (next){
     )
 }
 
-export const User =mongoose.model("User" ,UserSchema)
+export const User =mongoose.model("User" ,userSchema)
