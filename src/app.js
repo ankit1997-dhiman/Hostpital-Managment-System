@@ -21,9 +21,14 @@ app.use(cookieParser())
 
 
 // import router
+// import { API_VERSION } from "./contants.js";
 import userRouter from './routes/user.routes.js'
+import tweetRouter from './routes/tweet.routes.js'
+import { API_VERSION } from "./contants.js";
+
 
 // declare route
-app.use("/api/v1/users" , userRouter)
+app.use(`${API_VERSION}users` , userRouter)
+app.use(`${API_VERSION}tweets`, tweetRouter)
 
 export default app

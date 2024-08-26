@@ -4,6 +4,7 @@ import {User} from "../models/user.model.js"
 import {uplodOnCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
 
 
 const generateAccessTokenAndRefreshToken = async (userID)=>{
@@ -14,7 +15,7 @@ const generateAccessTokenAndRefreshToken = async (userID)=>{
         const userRefereshToken= user.refreshToken()
         
         user.refereshToken = userRefereshToken
-       
+        
         await user.save({validateBeforeSave:false})
         return {userAccessToken ,userRefereshToken}
 
@@ -71,7 +72,6 @@ const registerUser = asyncHandler( async (req, res)=>{
 })
 
 const loginUser = asyncHandler(async (req, res) =>{
-
     // req body -> data
     // username or email
     //find the user
@@ -79,9 +79,9 @@ const loginUser = asyncHandler(async (req, res) =>{
     //access and referesh token
     //send cookie
 
-    const {email, username, password} = req.body
-   
-    if (!username && !email) {
+    const {email, userName, password} = req.body
+
+    if (!userName && !email) {
         throw new ApiError(400, "username or email is required")
     }
     
@@ -92,7 +92,7 @@ const loginUser = asyncHandler(async (req, res) =>{
     // }
 
     const user = await User.findOne({
-        $or: [{username}, {email}]
+        $or: [{userName}, {email}]
     })
 
     if (!user) {
@@ -105,16 +105,19 @@ const loginUser = asyncHandler(async (req, res) =>{
     throw new ApiError(401, "Invalid user credentials")
     }
 
-    const {userAccessToken, userRefereshToken} = await generateAccessTokenAndRefreshToken(user._id)
+   const {userAccessToken, userRefereshToken} = await generateAccessTokenAndRefreshToken(user._id)
    
-    const loggedInUser = await User.findById(user._id).select("-password -refereshToken")
+
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
     const options = {
         httpOnly: true,
         secure: true
     }
 
-    return res.status(200).cookie("accessToken", userAccessToken, options)
+    return res
+    .status(200)
+    .cookie("accessToken", userAccessToken, options)
     .cookie("refreshToken", userRefereshToken, options)
     .json(
         new ApiResponse(
@@ -128,10 +131,11 @@ const loginUser = asyncHandler(async (req, res) =>{
 
 })
 
+
 const logout = asyncHandler(async (req,res)=>{
     User.findByIdAndUpdate(req.user._id,{
-        $set:{
-            refereshToken : undefined
+        $unset:{
+            refereshToken : 1,
         }
     },{new:true})
 
@@ -173,7 +177,7 @@ const refereshToken =asyncHandler(async(req,res)=>{
    const {userAccessToken,userRefereshToken} = await generateAccessTokenAndRefreshToken(user._id)
 
     return res.status(200).cookie("accessToken",userAccessToken,option).cookie("refreshToken" ,userRefereshToken ).json(
-     new ApiResponse(200, {user,"refreshToken" :userRefereshToken ,userAccessToken})
+     new ApiResponse(200, {user,"refreshToken" :userRefereshToken ,userRefereshToken})
     )
    } catch (error) {
     throw new ApiError(401, error.message || "refresh token is expired or used");
@@ -243,4 +247,109 @@ const userUpdate = asyncHandler(async(req,res)=>{
 
 })
 
-export {registerUser,loginUser,logout,refereshToken,updatePassword,currentUser,updateAvatar,userUpdate}
+
+const getUserChannelProfile= asyncHandler(async (req,res)=>{
+    const {username}=req.params
+    if(!username){
+        throw new ApiError(404 ,"User name is required")
+    }
+    
+    const channel = await User.aggregate([{
+        $match:{
+            userName:username?.toLowerCase()
+        },
+    },{
+        $lookup:{
+            from:"subscriptions",
+            localField:"_id",
+            foreignField:"channel",
+            as: "subscribers"
+        }
+    },{
+        $lookup:{
+            from:"subscriptions",
+            localField:"_id",
+            foreignField:"susubscriber",
+            as:"channelSubscribedTo"
+        }
+    },{
+        $addFields:{
+            subscriberCount:{
+                $size:"$subscribers"
+            },
+            channelSubscriberCount:{
+                $size:"$channelSubscribedTo"
+            },
+            isSubscribedTo:{
+                $cond :{
+                    $if:{$in: [req.user._id, "$subscribers.subscriber"]},
+                    then:true,
+                    else:false
+                }
+            }
+        }
+    },{
+        $project:{
+            userName:1,
+            email:1,
+            subscriberCount:1,
+            channelSubscriberCount:1,
+            avatar:1,
+            fullName:1
+        }
+    }
+])
+    if(channel?.length()){
+    throw new ApiError(404,"Data Not found")        
+    }
+
+
+   return res.status(200).json(new ApiResponse(200,channel[0],"data fetched successfully"))
+
+})
+
+const watchHistory= asyncHandler(async (req,res)=>{
+    const user= await User.aggregate([{
+        $match:{
+            _id: new mongoose.Types.ObjectId(req.user._id)
+        }
+    },{
+        $lookup:{
+            from:"videos",
+            localField:"watchHistory",
+            foreignField:"_id",
+            as:"watchHistory",
+            pipeline:[
+                {
+                    $lookup:{
+                        from:"users",
+                        localField:"_id",
+                        foreignField:"owner",
+                        as:"videoOwner",
+                        pipeline:[
+                            {
+                                $project:{
+                                    fullName:1,
+                                    avatar:1,
+                                    userName:1                                    
+                                }
+                            }                     
+                        ]
+                    }
+                },
+                {
+                    $addFields:{
+                        owner:{
+                            $first:"$videoOwner"
+                        }
+                    }
+                }
+            ]
+        }
+    }])   
+    
+    return res.status(200).json(new ApiResponse(200,user[0].watchHistory,"Data fetched Successfully"))
+ 
+})
+
+export {registerUser,loginUser,logout,refereshToken,updatePassword,currentUser,updateAvatar,userUpdate,watchHistory}
