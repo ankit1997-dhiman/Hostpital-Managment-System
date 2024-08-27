@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { model } from "mongoose";
 import { Tweet } from "../models/tweet.model.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -67,4 +67,38 @@ const getTweetById = asyncHandler(async (req, res) => {
   return res.status(200)
     .json(new ApiResponse(200, tweet, "tweet Fetched Successfully"));
 });
-export { registerTweet, getTweetById };
+
+const updateTweet =asyncHandler(async(req,res)=>{
+  const tweetId = req.params
+  const uContent=req.body
+ 
+   if(!tweetId){
+    throw new ApiError(404,"Tweet Not Found");
+   }
+    
+    const tweet = await Tweet.findByIdAndUpdate(new mongoose.Types.ObjectId(tweetId.tweetId),{
+      $set:{
+        content: uContent.content
+      }
+    },{new:true})
+
+    if (!tweet) {
+      throw new ApiError(400 ,"Internal server error while updating tweet");
+      
+    }
+  return res.status(200).json(
+    new ApiResponse(200,tweet,"Updated Succeesfully")
+  ) 
+})
+
+const deleteTweet= asyncHandler(async(req,res)=>{
+    const {tweetId} = req.params
+    if(!tweetId){
+      throw new ApiError(400 ,"Id Not Found")
+    }
+    
+    await Tweet.findByIdAndDelete(new mongoose.Types.ObjectId(tweetId))
+
+    return res.status(200).json(new ApiResponse(200 ,"Deleted Successfully"))
+})
+export { registerTweet, getTweetById,updateTweet ,deleteTweet};

@@ -187,7 +187,6 @@ const refereshToken =asyncHandler(async(req,res)=>{
 const updatePassword = asyncHandler(async(req ,res)=>{
    
     const {oldpassword,newPassword} = req.body
-    console.log(oldpassword,newPassword ,req.user)
 
     if(oldpassword && newPassword === ""){
         throw new ApiError(404, "Old Password and New Passowrd is required");
@@ -195,7 +194,7 @@ const updatePassword = asyncHandler(async(req ,res)=>{
 
     const user = await User.findById(req.user.id)
     const validPassword = await user.isPasswordCorrect(oldpassword)
-    console.log(validPassword)
+  
 
      if (!validPassword) {
         throw new ApiError(404, "Not Valid Password");
