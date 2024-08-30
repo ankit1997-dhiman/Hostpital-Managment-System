@@ -88,8 +88,24 @@ const likedVideo = asyncHandler(async (req, res) => {
   }
 });
 
-// const getLikeVideos = asyncHandler(async (req, res) => {
-//     const
-// });
+const getLikeVideos = asyncHandler(async (req, res) => {
+  const user = req.user;
+  console.log(user);
 
-export { toggleTweetLike, likedComment, likedVideo };
+  const likedVideo = await Like.aggregate([
+    {
+      $match: {
+        video: new mongoose.Types.ObjectId(user._id),
+      },
+    },
+  ]);
+  console.log(likedVideo);
+
+  res
+    .status(200)
+    .status(
+      new ApiResponse(200, likedVideo, "Liked Video Fetched Successfully")
+    );
+});
+
+export { toggleTweetLike, likedComment, likedVideo, getLikeVideos };
