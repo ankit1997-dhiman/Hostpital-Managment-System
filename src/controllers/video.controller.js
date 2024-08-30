@@ -113,9 +113,7 @@ const updateVideoId = asyncHandler(async (req, res) => {
       _id: new mongoose.Types.ObjectId(videoId),
     },
     {
-      $set: {
-        updateFields,
-      },
+      $set: updateFields,
     },
     {
       new: true,
