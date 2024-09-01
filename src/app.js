@@ -33,6 +33,7 @@ import tweetRouter from "./routes/tweet.routes.js";
 import likeRouter from "./routes/like.routes.js";
 import videoRouter from "./routes/video.route.js";
 import commentRouter from "./routes/comment.routes.js";
+import playlistRouter from "./routes/playlist.routes.js";
 
 import { API_VERSION } from "./contants.js";
 
@@ -42,5 +43,6 @@ app.use(`${API_VERSION}tweets`, tweetRouter);
 app.use(`${API_VERSION}likes`, likeRouter);
 app.use(`${API_VERSION}video`, videoRouter);
 app.use(`${API_VERSION}comment`, commentRouter);
+app.use(`${API_VERSION}playlist`, playlistRouter);
 
 export default app;
