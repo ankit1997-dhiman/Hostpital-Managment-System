@@ -45,7 +45,35 @@ const publishVideo = asyncHandler(async (req, res) => {
 });
 
 const getVideos = asyncHandler(async (req, res) => {
-  const video = await Video.find({});
+  // const video = await Video.find({});
+  const video = await Video.aggregate([
+    {
+      $lookup: {
+        from: "users", // Foreign collection name
+        localField: "owner", // Field in the 'video' collection
+        foreignField: "_id", // Field in the 'users' collection
+        as: "userInfo", // The name of the new array field with matching documents
+      },
+    },
+    {
+      $addFields: {
+        userInfo: { $arrayElemAt: ["$userInfo", 0] }, // Get the first element of the array
+      },
+    },
+    {
+      $project: {
+        title: 1,
+        thumbnail: 1,
+        video: 1,
+        userInfo: {
+          fullName: 1,
+        },
+        views: 1,
+        createdAt: 1,
+      },
+    },
+  ]);
+
   res.status(200).json(new ApiResponse(200, video, "Fetched all Videos"));
 });
 
@@ -56,13 +84,88 @@ const getVideosById = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Video Id not Found");
   }
 
-  const fetchVideoById = await Video.findById({
-    _id: new mongoose.Types.ObjectId(videoId),
-  });
+  // const fetchVideoById = await Video.findById({
+  //   _id: new mongoose.Types.ObjectId(videoId),
+  // });
+
+  const video = await Video.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(videoId),
+      },
+    },
+    {
+      $lookup: {
+        from: "users", // Foreign collection name
+        localField: "owner", // Field in the 'video' collection
+        foreignField: "_id", // Field in the 'users' collection
+        as: "userInfo", // The name of the new array field with matching documents
+      },
+    },
+    {
+      $addFields: {
+        userInfo: {
+          $cond: {
+            if: { $gt: [{ $size: "$userInfo" }, 0] }, // Check if the array is not empty
+            then: { $arrayElemAt: ["$userInfo", 0] }, // Get the first element
+            else: null, // Set to null if the array is empty
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        title: 1,
+        thumbnail: 1,
+        video: 1,
+        userInfo: {
+          fullName: 1,
+        },
+        views: 1,
+        description: 1,
+        createdAt: 1,
+      },
+    },
+  ]);
+
+  // const video = await Video.aggregate([
+  //   {
+  //     $match: {
+  //       _id: new mongoose.Types.ObjectId(videoId),
+  //     },
+  //   },
+  //   {
+  //     $lookup: {
+  //       from: "users", // Foreign collection name
+  //       localField: "owner", // Field in the 'video' collection
+  //       foreignField: "_id", // Field in the 'users' collection
+  //       as: "userInfo", // The name of the new array field with matching documents
+  //     },
+  //   },
+  //   {
+  //     $addFields: {
+
+  //       userInfo: { $arrayElemAt: ["$userInfo", 0] }, // Get the first element of the array
+  //     },
+  //   },
+  //   {
+  //     $project: {
+  //       title: 1,
+  //       thumbnail: 1,
+  //       video: 1,
+  //       userInfo: {
+  //         fullName: 1,
+  //       },
+  //       views: 1,
+  //       createdAt: 1,
+  //     },
+  //   },
+  // ]);
+  console.log(video);
 
   return res
     .status(200)
-    .json(new ApiResponse(200, fetchVideoById, "Video Fetched Suceesfully"));
+    .json(new ApiResponse(200, video[0], "Video Fetched Suceesfully"));
 });
 
 const deleteVideoId = asyncHandler(async (req, res) => {

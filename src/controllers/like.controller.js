@@ -90,7 +90,6 @@ const likedVideo = asyncHandler(async (req, res) => {
 
 const getLikeVideos = asyncHandler(async (req, res) => {
   const user = req.user;
-  console.log(user);
 
   const likedVideo = await Like.aggregate([
     {
@@ -99,7 +98,6 @@ const getLikeVideos = asyncHandler(async (req, res) => {
       },
     },
   ]);
-  console.log(likedVideo);
 
   res
     .status(200)

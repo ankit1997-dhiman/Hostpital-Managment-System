@@ -10,28 +10,27 @@ import {
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
-router.use(verifyJWT);
-router
-  .route("/")
-  .post(
-    upload.fields([
-      {
-        name: "videoFile",
-        maxCount: 1,
-      },
-      {
-        name: "thumbnail",
-        maxCount: 1,
-      },
-    ]),
-    publishVideo
-  )
-  .get(getVideos);
+router.route("/").post(
+  verifyJWT,
+  upload.fields([
+    {
+      name: "videoFile",
+      maxCount: 1,
+    },
+    {
+      name: "thumbnail",
+      maxCount: 1,
+    },
+  ]),
+  publishVideo
+);
+
+router.route("/all-videos/").get(getVideos);
 
 router
   .route("/:videoId")
-  .get(getVideosById)
-  .delete(deleteVideoId)
-  .patch(upload.single("thumbnail"), updateVideoId);
+  .get(verifyJWT, getVideosById)
+  .delete(verifyJWT, deleteVideoId)
+  .patch(verifyJWT, upload.single("thumbnail"), updateVideoId);
 
 export default router;
