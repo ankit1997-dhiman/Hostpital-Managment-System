@@ -12,7 +12,7 @@ const publishVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Fields are Required");
   }
 
-  const videoFile = req.files.videoFile[0].path;
+  const videoFile = req?.files?.videoFile[0]?.path;
 
   const video = await uplodOnCloudinary(videoFile);
 
@@ -38,6 +38,8 @@ const publishVideo = asyncHandler(async (req, res) => {
     isPublished: true,
     owner: req.user._id,
   });
+
+  console.log({ videoReocrd });
 
   return res
     .status(200)
@@ -161,7 +163,6 @@ const getVideosById = asyncHandler(async (req, res) => {
   //     },
   //   },
   // ]);
-  console.log(video);
 
   return res
     .status(200)

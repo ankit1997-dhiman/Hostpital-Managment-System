@@ -7,7 +7,3 @@
 ![Multer](https://img.shields.io/badge/-Multer-FF5733?logo=node.js&logoColor=white&style=for-the-badge)
 ![bcrypt](https://img.shields.io/badge/-bcrypt-3380FF?logo=lock&logoColor=white&style=for-the-badge)
 ![cookie-parser](https://img.shields.io/badge/-cookie--parser-FFCA28?logo=cookie&logoColor=white&style=for-the-badge)
-
-
-
-

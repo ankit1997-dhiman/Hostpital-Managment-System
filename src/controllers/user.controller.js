@@ -9,10 +9,10 @@ import mongoose from "mongoose";
 const generateAccessTokenAndRefreshToken = async (userID) => {
   try {
     const user = await User.findById(userID);
-    const userAccessToken = user.accessToken();
-    const userRefereshToken = user.refreshToken();
+    const userAccessToken = await user.accessToken();
+    const userRefereshToken = await user.refreshToken();
 
-    user.refereshToken = userRefereshToken;
+    user.refereshToken = await userRefereshToken;
 
     await user.save({ validateBeforeSave: false });
     return { userAccessToken, userRefereshToken };
@@ -22,10 +22,10 @@ const generateAccessTokenAndRefreshToken = async (userID) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { userName, email, fullName, password } = req.body;
+  const { email, fullName, userName, password } = req.body;
 
   if (
-    [fullName, userName, email, password].some((field) => field?.trim() === "")
+    [userName, fullName, email, password].some((field) => field?.trim() === "")
   ) {
     throw new ApiError(400, "All is required");
   }
@@ -80,21 +80,22 @@ const loginUser = asyncHandler(async (req, res) => {
   //access and referesh token
   //send cookie
 
-  const { email, userName, password } = req.body;
+  const { email, password } = req.body;
 
-  if (!userName && !email) {
+  if (!email) {
     throw new ApiError(400, "username or email is required");
   }
-
+  console.log(email);
   // Here is an alternative of above code based on logic discussed in video:
-  // if (!(username || email)) {
-  //     throw new ApiError(400, "username or email is required")
-
-  // }
+  if (!email) {
+    throw new ApiError(400, "username or email is required");
+  }
+  console.log({ email });
 
   const user = await User.findOne({
-    $or: [{ userName }, { email }],
+    $or: [{ email }],
   });
+  console.log(user);
 
   if (!user) {
     throw new ApiError(404, "User does not exist");
@@ -166,7 +167,7 @@ const refereshToken = asyncHandler(async (req, res) => {
   }
 
   try {
-    const decodedToken = jwt.verify(
+    const decodedToken = await jwt.verify(
       incomingRefreshToken,
       process.env.REFRESH_TOKEN
     );
@@ -176,10 +177,11 @@ const refereshToken = asyncHandler(async (req, res) => {
     if (!user) {
       throw new ApiError(401, "invalid refresh token");
     }
+    console.log(incomingRefreshToken, user.refereshToken);
 
-    if (incomingRefreshToken !== user.refereshToken) {
-      throw new ApiError(401, "referesh token is expired or used");
-    }
+    // if (incomingRefreshToken !== user.refereshToken) {
+    //   throw new ApiError(401, "referesh token is expired or used");
+    // }
 
     const option = {
       httpOnly: true,

@@ -18,7 +18,6 @@ const uplodOnCloudinary = async (filePath) => {
     fs.unlinkSync(filePath);
     return response;
   } catch (error) {
-    console.log(error, "here");
     fs.unlinkSync(filePath);
     return null;
   }
